@@ -34,10 +34,11 @@ func init() {
 	fmt.Println(res, err)
 
 }
+
 func main(){
 
 
-    //How to insert into couchbase bucket
+        //How to insert into couchbase bucket
 	var myData myTable
 
 	form := make(url.Values, 0)
@@ -48,22 +49,22 @@ func main(){
 	form.Add("profession", "Developer")
 	form.Add("hobbies", "Programming")
 	form.Add("hobbies", "Problem Solving")
-    form.Add("type", "participant") //what type of data or table name in general (SQL)
+    	form.Add("type", "participant") //what type of data or table name in general (SQL)
 
 	p := db.Insert(form, &myData)
 	fmt.Println("Status:", p.Status, form)
 
-    //How to retrieve from couchbase bucket (selected fields only)
+    	//How to retrieve from couchbase bucket (selected fields only)
 
-    pres := db.Query("SELECT aid,name,age,profession FROM master_erp WHERE type='participant'")
+    	pres := db.Query("SELECT aid,name,age,profession FROM master_erp WHERE type='participant'")
 	rows := pres.GetRows()
 
 	fmt.Println("Total Rows:",len(rows))
 	fmt.Println(rows)
 
-    //How to retrieve from couchbase bucket (All fields using *)
+    	//How to retrieve from couchbase bucket (All fields using *)
 
-    pres := db.Query("SELECT * FROM master_erp WHERE type='participant'")
+    	pres := db.Query("SELECT * FROM master_erp WHERE type='participant'")
 	rows := pres.GetBucketRows("master_erp") //bucketName as argument
 
 	fmt.Println("Total Rows:",len(rows))
