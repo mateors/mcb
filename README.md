@@ -51,8 +51,8 @@ func main(){
 	form.Add("hobbies", "Problem Solving")
     	form.Add("type", "participant") //what type of data or table name in general (SQL)
 
-	p := db.Insert(form, &myData) //pass by reference
-	fmt.Println("Status:", p.Status, form)
+	p := db.Insert(form, &myData) //pass by reference (&myData)
+	fmt.Println("Status:", p.Status) //p.Status == Success means data successfully inserted to bucket.
 
     	//How to retrieve from couchbase bucket (selected fields only)
 
