@@ -5,11 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"net/url"
 	"reflect"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/elliotchance/orderedmap"
 )
@@ -46,22 +48,38 @@ type nqlQuery struct {
 
 //DB is a database handle
 type DB struct {
+	host     string
 	url      string
 	username string
 	password string
 }
 
 //Connect method
-func Connect(url, userName, passWord string) *DB {
+func Connect(host, userName, passWord string) *DB {
 
-	db := &DB{url: url, username: userName, password: passWord}
+	url := fmt.Sprintf("http://%s:8093/query/service", host)
+	db := &DB{host: host, url: url, username: userName, password: passWord}
+
 	return db
 }
 
-//Exec (Result, error)
-// func (db *DB) Exec(query string, args ...interface{}) {
+//Ping checking couchbase database connection status
+func (db *DB) Ping() (string, error) {
 
-// }
+	var response string
+	timeout := time.Second * 3
+	conn, err := net.DialTimeout("tcp", net.JoinHostPort(db.host, "8093"), timeout)
+	if err != nil {
+		response = fmt.Sprintf("Connection error %v", err.Error())
+		return response, err
+	}
+	if conn != nil {
+		defer conn.Close()
+		response = fmt.Sprintf("Connection successful to %v", net.JoinHostPort(db.host, "8093"))
+	}
+
+	return response, nil
+}
 
 func (db *DB) base64UserPassword() (base64 string) {
 
@@ -73,7 +91,6 @@ func (db *DB) base64UserPassword() (base64 string) {
 }
 
 func (db *DB) authorization() (auth string) {
-
 	//"Basic QWRtaW5pc3RyYXRvcjpNb3N0YWluMzIxJA=="
 	auth = fmt.Sprintf("Basic %s", db.base64UserPassword())
 	return
@@ -117,17 +134,17 @@ func (pres *ResponseMessage) GetBucketRows(bucketName string) []map[string]inter
 
 }
 
-//Query ...Select
+//Query takes an sql statement as input and execute to the couchbase and returns the output
+// as pointer to ResponseMessage
 func (db *DB) Query(sql string) *ResponseMessage {
 
-	url := db.url //"http://localhost:8093/query/service"
+	url := db.url
 	method := "POST"
 
 	jsonTxt := sqlStatementJSON(sql)
 	//payload := strings.NewReader("{\n \"statement\": \"SELECT * FROM master_erp WHERE type='login_session'\"\n}\n\n")
 
 	payload := strings.NewReader(jsonTxt)
-	// RETURNING *\"\n}\n\n
 
 	client := &http.Client{}
 	req, err := http.NewRequest(method, url, payload)
@@ -137,8 +154,6 @@ func (db *DB) Query(sql string) *ResponseMessage {
 	}
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Authorization", db.authorization())
-	//req.Header.Add("Authorization", "Basic QWRtaW5pc3RyYXRvcjpNb3N0YWluMzIxJA==") //***
-	//QWRtaW5pc3RyYXRvcjpNb3N0YWluMzIxJA==
 
 	res, err := client.Do(req)
 	body, err := ioutil.ReadAll(res.Body)
@@ -155,7 +170,7 @@ func (db *DB) Query(sql string) *ResponseMessage {
 //queryRequest ...
 func (db *DB) queryRequest(jsonText string) *ResponseMessage {
 
-	url := db.url //"http://localhost:8093/query/service"
+	url := db.url
 	method := "POST"
 
 	//payload := strings.NewReader("{\n \"statement\": \"INSERT INTO master_erp (KEY, VALUE) VALUES (\\\"login_session::104\\\", { \\\"type\\\": \\\"login_session\\\", \\\"cid\\\":1,\\\"device_info\\\":\\\"device_log::2\\\",\\\"session_code\\\":\\\"000-1111-2222-333-4444\\\",\\\"login_id\\\":1,\\\"ip_address\\\":\\\"0.0.0.0\\\",\\\"city\\\":\\\"Dhaka\\\",\\\"country\\\":\\\"Bangladesh\\\",\\\"login_time\\\":\\\"2020-06-11 10:30:00\\\",\\\"create_date\\\":\\\"2020-06-11 09:00:30\\\",\\\"status\\\": 1 }) RETURNING *\"\n}\n\n")
@@ -167,10 +182,9 @@ func (db *DB) queryRequest(jsonText string) *ResponseMessage {
 	if err != nil {
 		fmt.Println(err)
 	}
+
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Authorization", db.authorization())
-	//req.Header.Add("Authorization", "Basic QWRtaW5pc3RyYXRvcjpNb3N0YWluMzIxJA==")
-	//QWRtaW5pc3RyYXRvcjpNb3N0YWluMzIxJA==
 
 	res, err := client.Do(req)
 	body, err := ioutil.ReadAll(res.Body)
@@ -194,17 +208,17 @@ func (db *DB) queryRequest(jsonText string) *ResponseMessage {
 	return &resPonse
 }
 
-//ProcessData ...
-//form url.Values | r *http.Request
-func (db *DB) ProcessData(form url.Values, intrfc interface{}) []byte {
+//ProcessData takes two argument, first argument will come from html form and
+//the seconds one is a reference to struct type
+func (db *DB) ProcessData(form url.Values, dataFields interface{}) []byte {
 
 	//r.ParseForm()
 	//r.Form
 
-	oMap := prepareData(form, intrfc)
+	oMap := prepareData(form, dataFields)
 	//fmt.Println("oMap:>", oMap)
 
-	//fmt.Println("intrfc:::::", intrfc)
+	//fmt.Println("intrfc:::::", dataFields)
 	mpRes := make(map[string]interface{}, 0)
 
 	// Iterate through all elements from oldest to newest:
@@ -227,28 +241,24 @@ func (db *DB) ProcessData(form url.Values, intrfc interface{}) []byte {
 
 	//fmt.Println()
 	//var logSessData2 models.LoginSession
-	json.Unmarshal(bytes, intrfc) //***s
+	json.Unmarshal(bytes, dataFields) //***s
 	//bytes2, _ := json.Marshal(intrfc)
 
 	return bytes
 
 }
 
-//EncodeBase64 usually used for Basic Authorization in http header.
-//format= username:password
 //func EncodeBase64(plainText string) (base64 string) {
-
 //import b64 "encoding/base64"
-//data := "Administrator:Mostain321$"
 //base64 = b64.StdEncoding.EncodeToString([]byte(plainText))
 //fmt.Println(base64)
 //return
 //}
 
 //UpsertIntoBucket ...
-func (db *DB) UpsertIntoBucket(docID, bucketName string, intrfc interface{}) *ResponseMessage {
+func (db *DB) UpsertIntoBucket(docID, bucketName string, dataFields interface{}) *ResponseMessage {
 
-	bytes, _ := json.Marshal(intrfc)
+	bytes, _ := json.Marshal(dataFields)
 
 	//upsertQueryBuilder()
 	upsertQuery := upsertQueryBuilder(bucketName, docID, string(bytes))
@@ -261,10 +271,10 @@ func (db *DB) UpsertIntoBucket(docID, bucketName string, intrfc interface{}) *Re
 
 }
 
-//InsertIntoBucket ...
-func (db *DB) InsertIntoBucket(docID, bucketName string, intrfc interface{}) *ResponseMessage {
+//InsertIntoBucket takes 3 argument and returns pointer to ResponseMessage
+func (db *DB) InsertIntoBucket(docID, bucketName string, dataFields interface{}) *ResponseMessage {
 
-	bytes, _ := json.Marshal(intrfc)
+	bytes, _ := json.Marshal(dataFields)
 
 	//upsertQueryBuilder()
 	insertQuery := insertQueryBuilder(bucketName, docID, string(bytes))
@@ -277,12 +287,13 @@ func (db *DB) InsertIntoBucket(docID, bucketName string, intrfc interface{}) *Re
 
 }
 
-//Insert method for insert
-func (db *DB) Insert(form url.Values, intrfc interface{}) *ResponseMessage {
+//Insert method for insert, first argument supposed to coming from a html form, second argument
+//pass struct field variable as reference placing & as prefix ex: &sVar where sVar is a struct type variable
+func (db *DB) Insert(form url.Values, dataFields interface{}) *ResponseMessage {
 
 	//bucketName := "master_erp"
 	//docID := "12121"
-	bytes := db.ProcessData(form, intrfc)
+	bytes := db.ProcessData(form, dataFields)
 	//db.ProcessData(form, intrfc)
 	//json.Unmarshal(bytes, intrfc) //***s
 
@@ -311,11 +322,11 @@ func (db *DB) Insert(form url.Values, intrfc interface{}) *ResponseMessage {
 }
 
 //Upsert method for update and insert both
-func (db *DB) Upsert(form url.Values, intrfc interface{}) *ResponseMessage {
+func (db *DB) Upsert(form url.Values, dataFields interface{}) *ResponseMessage {
 
 	//bucketName := "master_erp"
 	//docID := "12121"
-	bytes := db.ProcessData(form, intrfc)
+	bytes := db.ProcessData(form, dataFields)
 	//db.ProcessData(form, intrfc)
 	//json.Unmarshal(bytes, intrfc) //***s
 
@@ -368,18 +379,18 @@ func upsertQueryBuilder(bucketName, docID, bytesStr string) (nqlStatement string
 
 //Struct fields can be accessed through a struct pointer.
 
-func prepareData(form url.Values, intrfc interface{}) *orderedmap.OrderedMap {
+func prepareData(form url.Values, dataFields interface{}) *orderedmap.OrderedMap {
 
 	//uMap := make(map[string]interface{}, 0)
 	roMap := orderedmap.NewOrderedMap() //return ordered map
 
-	typeSlice := readSructColumnsType(intrfc)
-	oMap := keyValOrder(form, intrfc)
+	typeSlice := readSructColumnsType(dataFields)
+	oMap := keyValOrder(form, dataFields)
 
 	for i, key := range oMap.Keys() {
 		value, _ := oMap.Get(key)
 		vtype := typeSlice[i]
-		//fmt.Println(key, "==", value, "->", vtype)
+		fmt.Println(key, "==", value, "->", vtype)
 
 		var keyValue string = fmt.Sprintf("%v", value)
 
@@ -394,6 +405,11 @@ func prepareData(form url.Values, intrfc interface{}) *orderedmap.OrderedMap {
 
 			kValue, _ := strconv.ParseInt(keyValue, 10, 64)
 			roMap.Set(key, kValue)
+
+		} else if vtype == "slice" {
+
+			//vv := form.Get(key)
+			roMap.Set(key, form[key.(string)])
 
 		} else {
 
@@ -428,12 +444,12 @@ func readSructColumnsType(i interface{}) []string {
 	return cols
 }
 
-//KeyValOrder ...
-func keyValOrder(form url.Values, intrfc interface{}) *orderedmap.OrderedMap {
+//KeyValOrder takes two argument and returns pointer to an orderedMap
+func keyValOrder(form url.Values, dataFields interface{}) *orderedmap.OrderedMap {
 
 	//uMap := make(map[string]interface{}, 0)
 	oMap := orderedmap.NewOrderedMap()
-	iVal := reflect.ValueOf(intrfc).Elem()
+	iVal := reflect.ValueOf(dataFields).Elem()
 	typ := iVal.Type()
 
 	for i := 0; i < iVal.NumField(); i++ {
@@ -468,5 +484,3 @@ func sqlStatementJSON(sql string) string {
 
 	return string(rbytes)
 }
-
-//UPDATE master_erp SET field1=val1,field2=val2 ... WHERE condf1=condval1 AND ...;
