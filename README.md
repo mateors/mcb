@@ -8,7 +8,9 @@ You can use this library to work with couchbase database, couchbase SDK for gola
 > go get github.com/mateors/mcb
 
 ## how to use on code?
-```
+
+```go
+
 var db *mcb.DB
 
 type myTable struct {
