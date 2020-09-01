@@ -390,8 +390,7 @@ func prepareData(form url.Values, dataFields interface{}) *orderedmap.OrderedMap
 	for i, key := range oMap.Keys() {
 		value, _ := oMap.Get(key)
 		vtype := typeSlice[i]
-		fmt.Println(key, "==", value, "->", vtype)
-
+		//fmt.Println(key, "==", value, "->", vtype)
 		var keyValue string = fmt.Sprintf("%v", value)
 
 		if vtype == "int" {
