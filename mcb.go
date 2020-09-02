@@ -226,7 +226,7 @@ func (db *DB) ProcessData(form url.Values, dataFields interface{}) []byte {
 
 		//fmt.Println(el.Key, "===", el.Value)
 		//fmt.Printf("%v %T\n", el.Value, el.Value)
-		if el.Value == nil || el.Value == "" {
+		if el.Value == nil { //|| el.Value == ""
 			//fmt.Println("nil value for", el.Key)
 			//mpRes[el.Key.(string)] = nil
 
