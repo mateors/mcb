@@ -405,6 +405,11 @@ func prepareData(form url.Values, dataFields interface{}) *orderedmap.OrderedMap
 			kValue, _ := strconv.ParseInt(keyValue, 10, 64)
 			roMap.Set(key, kValue)
 
+		} else if vtype == "float64" {
+
+			kValue, _ := strconv.ParseFloat(keyValue, 64)
+			roMap.Set(key, kValue)
+
 		} else if vtype == "slice" {
 
 			//vv := form.Get(key)
