@@ -502,12 +502,6 @@ func keyValOrder(form url.Values, dataFields interface{}) *orderedmap.OrderedMap
 			commaFoundAt := strings.Index(tag, ",")
 			//fmt.Println("commaFoundAt-->", commaFoundAt, tag)
 			tag = tag[0:commaFoundAt]
-
-			// if len(form.Get(tag)) > 0 { //ignored omitemty field which has 0 length
-			// 	oMap.Set(tag, form.Get(tag))
-			// 	fmt.Println(">>", tag, form.Get(tag))
-			// }
-
 		}
 
 		//ignored omitemty field which has 0 length
@@ -516,11 +510,7 @@ func keyValOrder(form url.Values, dataFields interface{}) *orderedmap.OrderedMap
 		} else {
 			oMap.Set(tag, form.Get(tag))
 		}
-
-		//cols = append(cols, tag)
-		//oMap.Set(tag, form.Get(tag))
-		fmt.Println(">>", tag, "=", form.Get(tag), omitFound, len(form.Get(tag)))
-
+		//fmt.Println(">>", tag, "=", form.Get(tag), omitFound, len(form.Get(tag)))
 	}
 
 	return oMap
