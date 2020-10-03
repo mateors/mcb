@@ -13,6 +13,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/mateors/mtool"
+
 	"github.com/elliotchance/orderedmap"
 )
 
@@ -218,6 +220,9 @@ func (db *DB) ProcessData(form url.Values, dataFields interface{}) []byte {
 	oMap := prepareData(form, dataFields)
 	//fmt.Println("oMap:>", oMap)
 
+	omitList := omitEmptyList(form, dataFields)
+	//fmt.Println("fieldList:", fieldList)
+
 	//fmt.Println("intrfc:::::", dataFields)
 	mpRes := make(map[string]interface{}, 0)
 
@@ -231,7 +236,11 @@ func (db *DB) ProcessData(form url.Values, dataFields interface{}) []byte {
 			//mpRes[el.Key.(string)] = nil
 
 		} else {
-			mpRes[el.Key.(string)] = el.Value
+			elKey := el.Key.(string)
+			isFound, _ := mtool.ArrayFind(omitList, elKey) //check if key exist in omitList
+			if isFound == false {
+				mpRes[elKey] = el.Value
+			}
 		}
 
 	}
@@ -317,6 +326,10 @@ func (db *DB) Insert(form url.Values, dataFields interface{}) *ResponseMessage {
 	//fmt.Println(nqlInsertStatement)
 
 	responseMessage := db.queryRequest(nqlInsertStatement)
+	//fmt.Println(responseMessage.Status)
+	if responseMessage.Status != "success" {
+		fmt.Println(nqlInsertStatement)
+	}
 
 	return responseMessage
 }
@@ -448,6 +461,29 @@ func readSructColumnsType(i interface{}) []string {
 	return cols
 }
 
+func omitEmptyList(form url.Values, dataFields interface{}) []string {
+
+	var fieldList []string
+	iVal := reflect.ValueOf(dataFields).Elem()
+	typ := iVal.Type()
+
+	for i := 0; i < iVal.NumField(); i++ {
+		tag := typ.Field(i).Tag.Get("json")
+		var omitFound bool
+		if strings.Contains(tag, ",") == true {
+			omitFound = true
+		}
+
+		if omitFound == true && len(form.Get(tag)) == 0 {
+			commaFoundAt := strings.Index(tag, ",")
+			ntag := tag[0:commaFoundAt]
+			fieldList = append(fieldList, ntag)
+		}
+	}
+
+	return fieldList
+}
+
 //KeyValOrder takes two argument and returns pointer to an orderedMap
 func keyValOrder(form url.Values, dataFields interface{}) *orderedmap.OrderedMap {
 
@@ -460,15 +496,30 @@ func keyValOrder(form url.Values, dataFields interface{}) *orderedmap.OrderedMap
 
 		tag := typ.Field(i).Tag.Get("json")
 
+		var omitFound bool
 		if strings.Contains(tag, ",") == true {
+			omitFound = true
 			commaFoundAt := strings.Index(tag, ",")
-			//fmt.Println("commaFoundAt-->", commaFoundAt)
+			//fmt.Println("commaFoundAt-->", commaFoundAt, tag)
 			tag = tag[0:commaFoundAt]
+
+			// if len(form.Get(tag)) > 0 { //ignored omitemty field which has 0 length
+			// 	oMap.Set(tag, form.Get(tag))
+			// 	fmt.Println(">>", tag, form.Get(tag))
+			// }
+
+		}
+
+		//ignored omitemty field which has 0 length
+		if omitFound == true && len(form.Get(tag)) == 0 {
+			oMap.Set(tag, "")
+		} else {
+			oMap.Set(tag, form.Get(tag))
 		}
 
 		//cols = append(cols, tag)
-		oMap.Set(tag, form.Get(tag))
-		//fmt.Println(">>", tag, "=", form.Get(tag))
+		//oMap.Set(tag, form.Get(tag))
+		fmt.Println(">>", tag, "=", form.Get(tag), omitFound, len(form.Get(tag)))
 
 	}
 
