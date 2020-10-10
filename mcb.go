@@ -152,7 +152,7 @@ func (db *DB) Query(sql string) *ResponseMessage {
 	req, err := http.NewRequest(method, url, payload)
 
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("ERROR @ Query:", err.Error())
 	}
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Authorization", db.authorization())
@@ -182,7 +182,7 @@ func (db *DB) queryRequest(jsonText string) *ResponseMessage {
 	req, err := http.NewRequest(method, url, payload)
 
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("ERROR @queryRequest:", err.Error())
 	}
 
 	req.Header.Add("Content-Type", "application/json")
@@ -214,16 +214,11 @@ func (db *DB) queryRequest(jsonText string) *ResponseMessage {
 //the seconds one is a reference to struct type
 func (db *DB) ProcessData(form url.Values, dataFields interface{}) []byte {
 
-	//r.ParseForm()
-	//r.Form
-
 	oMap := prepareData(form, dataFields)
 	//fmt.Println("oMap:>", oMap)
-
 	omitList := omitEmptyList(form, dataFields)
 	//fmt.Println("fieldList:", fieldList)
 
-	//fmt.Println("intrfc:::::", dataFields)
 	mpRes := make(map[string]interface{}, 0)
 
 	// Iterate through all elements from oldest to newest:
@@ -236,10 +231,19 @@ func (db *DB) ProcessData(form url.Values, dataFields interface{}) []byte {
 			//mpRes[el.Key.(string)] = nil
 
 		} else {
+
 			elKey := el.Key.(string)
+			elVal := el.Key.(string)
 			isFound, _ := mtool.ArrayFind(omitList, elKey) //check if key exist in omitList
-			if isFound == false {
+
+			if isFound == true && len(elVal) > 0 {
 				mpRes[elKey] = el.Value
+
+			} else if isFound == false { //100% valid candidate
+				mpRes[elKey] = el.Value
+
+			} else {
+				fmt.Println("###### ProcessData::", elKey, el.Value)
 			}
 		}
 
@@ -268,32 +272,22 @@ func (db *DB) ProcessData(form url.Values, dataFields interface{}) []byte {
 func (db *DB) UpsertIntoBucket(docID, bucketName string, dataFields interface{}) *ResponseMessage {
 
 	bytes, _ := json.Marshal(dataFields)
-
 	//upsertQueryBuilder()
 	upsertQuery := upsertQueryBuilder(bucketName, docID, string(bytes))
-
 	nqlInsertStatement := sqlStatementJSON(upsertQuery)
-
 	responseMessage := db.queryRequest(nqlInsertStatement)
-
 	return responseMessage
-
 }
 
 //InsertIntoBucket takes 3 argument and returns pointer to ResponseMessage
 func (db *DB) InsertIntoBucket(docID, bucketName string, dataFields interface{}) *ResponseMessage {
 
 	bytes, _ := json.Marshal(dataFields)
-
-	//upsertQueryBuilder()
 	insertQuery := insertQueryBuilder(bucketName, docID, string(bytes))
-
 	nqlInsertStatement := sqlStatementJSON(insertQuery)
-
 	responseMessage := db.queryRequest(nqlInsertStatement)
 
 	return responseMessage
-
 }
 
 //Insert method for insert, first argument supposed to coming from a html form, second argument
@@ -307,7 +301,6 @@ func (db *DB) Insert(form url.Values, dataFields interface{}) *ResponseMessage {
 	//json.Unmarshal(bytes, intrfc) //***s
 
 	//fmt.Println("DATA>>>>", intrfc)
-
 	//bytes, _ := json.Marshal(intrfc)
 	//fmt.Println("intrfcBytes:", string(bytes))
 
@@ -315,15 +308,13 @@ func (db *DB) Insert(form url.Values, dataFields interface{}) *ResponseMessage {
 	bucketName := form.Get("bucket")
 
 	//json.Unmarshal(bytes, intrfc)
-	// /&logSessData
-
 	insertQuery := insertQueryBuilder(bucketName, docID, string(bytes))
 	//insertQuery := insertQueryBuilder(bucketName, docID, intrfc)
 
 	//fmt.Println(insertQuery)
 	nqlInsertStatement := sqlStatementJSON(insertQuery)
 	//fmt.Println()
-	//fmt.Println(nqlInsertStatement)
+	//fmt.Println(nqlInsertStatement, form)
 
 	responseMessage := db.queryRequest(nqlInsertStatement)
 	//fmt.Println(responseMessage.Status)
@@ -351,17 +342,11 @@ func (db *DB) Upsert(form url.Values, dataFields interface{}) *ResponseMessage {
 	docID := form.Get("aid") //docid=aid
 	bucketName := form.Get("bucket")
 
-	//json.Unmarshal(bytes, intrfc)
-	// /&logSessData
-
 	insertQuery := upsertQueryBuilder(bucketName, docID, string(bytes))
 	//insertQuery := insertQueryBuilder(bucketName, docID, intrfc)
 
 	//fmt.Println(insertQuery)
 	nqlInsertStatement := sqlStatementJSON(insertQuery)
-	//fmt.Println()
-	//fmt.Println(nqlInsertStatement)
-
 	responseMessage := db.queryRequest(nqlInsertStatement)
 
 	return responseMessage
@@ -410,8 +395,6 @@ func prepareData(form url.Values, dataFields interface{}) *orderedmap.OrderedMap
 
 			kValue, _ := strconv.Atoi(keyValue)
 			roMap.Set(key, kValue)
-			//valid := roMap.Set(key, kValue)
-			//fmt.Println(key, valid)
 
 		} else if vtype == "int64" {
 
@@ -425,7 +408,6 @@ func prepareData(form url.Values, dataFields interface{}) *orderedmap.OrderedMap
 
 		} else if vtype == "slice" {
 
-			//vv := form.Get(key)
 			roMap.Set(key, form[key.(string)])
 
 		} else {
@@ -507,6 +489,7 @@ func keyValOrder(form url.Values, dataFields interface{}) *orderedmap.OrderedMap
 		//ignored omitemty field which has 0 length
 		if omitFound == true && len(form.Get(tag)) == 0 {
 			oMap.Set(tag, "")
+			//fmt.Println(">>", tag, "=", form.Get(tag), omitFound, len(form.Get(tag)))
 		} else {
 			oMap.Set(tag, form.Get(tag))
 		}
