@@ -61,7 +61,6 @@ func Connect(host, userName, passWord string) *DB {
 
 	url := fmt.Sprintf("http://%s:8093/query/service", host)
 	db := &DB{host: host, url: url, username: userName, password: passWord}
-
 	return db
 }
 
@@ -87,9 +86,7 @@ func (db *DB) base64UserPassword() (base64 string) {
 
 	plainTxt := fmt.Sprintf("%s:%s", db.username, db.password)
 	base64 = b64.StdEncoding.EncodeToString([]byte(plainTxt))
-
 	return
-
 }
 
 func (db *DB) authorization() (auth string) {
@@ -102,17 +99,11 @@ func (db *DB) authorization() (auth string) {
 func (pres *ResponseMessage) GetRows() []map[string]interface{} {
 
 	rows := make([]map[string]interface{}, 0)
-
 	for _, v := range pres.Result {
-
 		ms := v.(map[string]interface{})
-		//fmt.Println(i, "==>", ms["master_erp"])
 		rows = append(rows, ms)
-
 	}
-
 	return rows
-
 }
 
 //GetBucketRows ...
@@ -131,9 +122,7 @@ func (pres *ResponseMessage) GetBucketRows(bucketName string) []map[string]inter
 		}
 
 	}
-
 	return rows
-
 }
 
 //Query takes an sql statement as input and execute to the couchbase and returns the output
