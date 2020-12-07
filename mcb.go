@@ -206,7 +206,7 @@ func (db *DB) ProcessData(form url.Values, dataFields interface{}) []byte {
 	oMap := prepareData(form, dataFields)
 	//fmt.Println("oMap:>", oMap)
 	omitList := omitEmptyList(form, dataFields)
-	//fmt.Println("fieldList:", fieldList)
+	//fmt.Println("OmitFieldList:", omitList)
 
 	mpRes := make(map[string]interface{}, 0)
 
@@ -222,17 +222,18 @@ func (db *DB) ProcessData(form url.Values, dataFields interface{}) []byte {
 		} else {
 
 			elKey := el.Key.(string)
-			elVal := el.Key.(string)
+			elVal := fmt.Sprintf(`%v`, el.Value)           //**correction
 			isFound, _ := mtool.ArrayFind(omitList, elKey) //check if key exist in omitList
 
 			if isFound == true && len(elVal) > 0 {
+				//fmt.Println(elKey, "==>", elVal, len(elVal))
 				mpRes[elKey] = el.Value
 
 			} else if isFound == false { //100% valid candidate
 				mpRes[elKey] = el.Value
 
 			} else {
-				fmt.Println("###### ProcessData::", elKey, el.Value)
+				//fmt.Println("###### ProcessDataOmit::", elKey, el.Value)
 			}
 		}
 
@@ -439,6 +440,7 @@ func omitEmptyList(form url.Values, dataFields interface{}) []string {
 	typ := iVal.Type()
 
 	for i := 0; i < iVal.NumField(); i++ {
+
 		tag := typ.Field(i).Tag.Get("json")
 		var omitFound bool
 		if strings.Contains(tag, ",") == true {
