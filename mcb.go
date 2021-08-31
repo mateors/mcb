@@ -246,9 +246,7 @@ func (db *DB) ProcessData(form url.Values, dataFields interface{}) []byte {
 	//var logSessData2 models.LoginSession
 	json.Unmarshal(bytes, dataFields) //***s
 	//bytes2, _ := json.Marshal(intrfc)
-
 	return bytes
-
 }
 
 //func EncodeBase64(plainText string) (base64 string) {
@@ -371,8 +369,22 @@ func prepareData(form url.Values, dataFields interface{}) *orderedmap.OrderedMap
 
 	//uMap := make(map[string]interface{}, 0)
 	roMap := orderedmap.NewOrderedMap() //return ordered map
+	dtype := reflect.TypeOf(dataFields).Kind().String()
+	//fmt.Println(dtype)
 
-	typeSlice := readSructColumnsType(dataFields)
+	var typeSlice []string
+	if dtype == "ptr" {
+		typeSlice = readSructColumnsType(dataFields)
+
+	} else if dtype == "slice" {
+		typeSlice = dataFields.([]string)
+
+	} else {
+
+	}
+
+	//fmt.Println(typeSlice)
+	//typeSlice := readSructColumnsType(dataFields)
 	oMap := keyValOrder(form, dataFields)
 
 	for i, key := range oMap.Keys() {
@@ -436,22 +448,30 @@ func readSructColumnsType(i interface{}) []string {
 func omitEmptyList(form url.Values, dataFields interface{}) []string {
 
 	var fieldList []string
-	iVal := reflect.ValueOf(dataFields).Elem()
-	typ := iVal.Type()
+	dtype := reflect.TypeOf(dataFields).Kind().String()
 
-	for i := 0; i < iVal.NumField(); i++ {
+	if dtype == "ptr" {
 
-		tag := typ.Field(i).Tag.Get("json")
-		var omitFound bool
-		if strings.Contains(tag, ",") == true {
-			omitFound = true
+		iVal := reflect.ValueOf(dataFields).Elem()
+		typ := iVal.Type()
+
+		for i := 0; i < iVal.NumField(); i++ {
+
+			tag := typ.Field(i).Tag.Get("json")
+			var omitFound bool
+			if strings.Contains(tag, ",") == true {
+				omitFound = true
+			}
+
+			if omitFound == true && len(form.Get(tag)) == 0 {
+				commaFoundAt := strings.Index(tag, ",")
+				ntag := tag[0:commaFoundAt]
+				fieldList = append(fieldList, ntag)
+			}
 		}
 
-		if omitFound == true && len(form.Get(tag)) == 0 {
-			commaFoundAt := strings.Index(tag, ",")
-			ntag := tag[0:commaFoundAt]
-			fieldList = append(fieldList, ntag)
-		}
+	} else if dtype == "slice" {
+		fieldList = dataFields.([]string)
 	}
 
 	return fieldList
@@ -462,29 +482,43 @@ func keyValOrder(form url.Values, dataFields interface{}) *orderedmap.OrderedMap
 
 	//uMap := make(map[string]interface{}, 0)
 	oMap := orderedmap.NewOrderedMap()
-	iVal := reflect.ValueOf(dataFields).Elem()
-	typ := iVal.Type()
 
-	for i := 0; i < iVal.NumField(); i++ {
+	dtype := reflect.TypeOf(dataFields).Kind().String()
+	//fmt.Println("keyValOrder:", dtype)
 
-		tag := typ.Field(i).Tag.Get("json")
+	if dtype == "ptr" {
 
-		var omitFound bool
-		if strings.Contains(tag, ",") == true {
-			omitFound = true
-			commaFoundAt := strings.Index(tag, ",")
-			//fmt.Println("commaFoundAt-->", commaFoundAt, tag)
-			tag = tag[0:commaFoundAt]
+		iVal := reflect.ValueOf(dataFields).Elem()
+		typ := iVal.Type()
+
+		for i := 0; i < iVal.NumField(); i++ {
+
+			tag := typ.Field(i).Tag.Get("json")
+
+			var omitFound bool
+			if strings.Contains(tag, ",") == true {
+				omitFound = true
+				commaFoundAt := strings.Index(tag, ",")
+				//fmt.Println("commaFoundAt-->", commaFoundAt, tag)
+				tag = tag[0:commaFoundAt]
+			}
+
+			//ignored omitemty field which has 0 length
+			if omitFound == true && len(form.Get(tag)) == 0 {
+				oMap.Set(tag, "")
+				//fmt.Println(">>", tag, "=", form.Get(tag), omitFound, len(form.Get(tag)))
+			} else {
+				oMap.Set(tag, form.Get(tag))
+			}
+			//fmt.Println(">>", tag, "=", form.Get(tag), omitFound, len(form.Get(tag)))
 		}
 
-		//ignored omitemty field which has 0 length
-		if omitFound == true && len(form.Get(tag)) == 0 {
-			oMap.Set(tag, "")
-			//fmt.Println(">>", tag, "=", form.Get(tag), omitFound, len(form.Get(tag)))
-		} else {
+	} else if dtype == "slice" {
+
+		for _, tag := range dataFields.([]string) {
 			oMap.Set(tag, form.Get(tag))
 		}
-		//fmt.Println(">>", tag, "=", form.Get(tag), omitFound, len(form.Get(tag)))
+
 	}
 
 	return oMap
