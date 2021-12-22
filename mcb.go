@@ -53,13 +53,14 @@ type DB struct {
 	url      string
 	username string
 	password string
+	bucket   string
 }
 
 //Connect method
-func Connect(host, userName, passWord string) *DB {
+func Connect(host, userName, passWord, bucketName string) *DB {
 
 	url := fmt.Sprintf("http://%s:8093/query/service", host)
-	db := &DB{host: host, url: url, username: userName, password: passWord}
+	db := &DB{host: host, url: url, username: userName, password: passWord, bucket: bucketName}
 	return db
 }
 
@@ -267,21 +268,22 @@ func (db *DB) ProcessData(form url.Values, dataFields interface{}) []byte {
 //}
 
 //UpsertIntoBucket ...
-func (db *DB) UpsertIntoBucket(docID, bucketName string, dataFields interface{}) *ResponseMessage {
+func (db *DB) UpsertIntoBucket(docID string, dataFields interface{}) *ResponseMessage {
 
 	bytes, _ := json.Marshal(dataFields)
+
 	//upsertQueryBuilder()
-	upsertQuery := upsertQueryBuilder(bucketName, docID, string(bytes))
+	upsertQuery := upsertQueryBuilder(db.bucket, docID, string(bytes))
 	nqlInsertStatement := sqlStatementJSON(upsertQuery)
 	responseMessage := db.queryRequest(nqlInsertStatement)
 	return responseMessage
 }
 
 //InsertIntoBucket takes 3 argument and returns pointer to ResponseMessage
-func (db *DB) InsertIntoBucket(docID, bucketName string, dataFields interface{}) *ResponseMessage {
+func (db *DB) InsertIntoBucket(docID string, dataFields interface{}) *ResponseMessage {
 
 	bytes, _ := json.Marshal(dataFields)
-	insertQuery := insertQueryBuilder(bucketName, docID, string(bytes))
+	insertQuery := insertQueryBuilder(db.bucket, docID, string(bytes))
 	nqlInsertStatement := sqlStatementJSON(insertQuery)
 	responseMessage := db.queryRequest(nqlInsertStatement)
 
@@ -303,10 +305,10 @@ func (db *DB) Insert(form url.Values, dataFields interface{}) *ResponseMessage {
 	//fmt.Println("intrfcBytes:", string(bytes))
 
 	docID := form.Get("aid") //docid=aid
-	bucketName := form.Get("bucket")
+	//bucketName := form.Get("bucket")
 
 	//json.Unmarshal(bytes, intrfc)
-	insertQuery := insertQueryBuilder(bucketName, docID, string(bytes))
+	insertQuery := insertQueryBuilder(db.bucket, docID, string(bytes))
 	//insertQuery := insertQueryBuilder(bucketName, docID, intrfc)
 
 	//fmt.Println(insertQuery)
@@ -338,9 +340,9 @@ func (db *DB) Upsert(form url.Values, dataFields interface{}) *ResponseMessage {
 	//fmt.Println("intrfcBytes:", string(bytes))
 
 	docID := form.Get("aid") //docid=aid
-	bucketName := form.Get("bucket")
+	//bucketName := form.Get("bucket")
 
-	insertQuery := upsertQueryBuilder(bucketName, docID, string(bytes))
+	insertQuery := upsertQueryBuilder(db.bucket, docID, string(bytes))
 	//insertQuery := insertQueryBuilder(bucketName, docID, intrfc)
 
 	//fmt.Println(insertQuery)
