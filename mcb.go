@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net"
 	"net/http"
 	"net/url"
@@ -12,8 +13,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/mateors/mtool"
 
 	"github.com/elliotchance/orderedmap"
 )
@@ -147,14 +146,20 @@ func (db *DB) Query(sql string) *ResponseMessage {
 	req.Header.Add("Authorization", db.authorization())
 
 	res, err := client.Do(req)
+	if err != nil {
+		log.Println(err)
+		return nil
+	}
 	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		log.Println(err)
+		return nil
+	}
 	defer res.Body.Close()
 
 	//local variable as a pointer
 	var resPonse ResponseMessage
-
 	json.Unmarshal(body, &resPonse)
-
 	return &resPonse
 }
 
@@ -178,7 +183,14 @@ func (db *DB) queryRequest(jsonText string) *ResponseMessage {
 	req.Header.Add("Authorization", db.authorization())
 
 	res, err := client.Do(req)
+	if err != nil {
+		//log.Println(err)
+		return nil
+	}
 	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return nil
+	}
 	defer res.Body.Close()
 
 	//local variable as a pointer
@@ -208,7 +220,7 @@ func (db *DB) ProcessData(form url.Values, dataFields interface{}) []byte {
 	omitList := omitEmptyList(form, dataFields)
 	//fmt.Println("OmitFieldList:", omitList)
 
-	mpRes := make(map[string]interface{}, 0)
+	mpRes := make(map[string]interface{})
 
 	// Iterate through all elements from oldest to newest:
 	for el := oMap.Front(); el != nil; el = el.Next() {
@@ -222,18 +234,16 @@ func (db *DB) ProcessData(form url.Values, dataFields interface{}) []byte {
 		} else {
 
 			elKey := el.Key.(string)
-			elVal := fmt.Sprintf(`%v`, el.Value)           //**correction
-			isFound, _ := mtool.ArrayFind(omitList, elKey) //check if key exist in omitList
+			elVal := fmt.Sprintf(`%v`, el.Value)     //**correction
+			isFound, _ := ArrayFind(omitList, elKey) //check if key exist in omitList
 
-			if isFound == true && len(elVal) > 0 {
+			if isFound && len(elVal) > 0 {
 				//fmt.Println(elKey, "==>", elVal, len(elVal))
 				mpRes[elKey] = el.Value
 
-			} else if isFound == false { //100% valid candidate
+			} else if !isFound { //100% valid candidate
 				mpRes[elKey] = el.Value
 
-			} else {
-				//fmt.Println("###### ProcessDataOmit::", elKey, el.Value)
 			}
 		}
 
@@ -364,7 +374,6 @@ func upsertQueryBuilder(bucketName, docID, bytesStr string) (nqlStatement string
 }
 
 //Struct fields can be accessed through a struct pointer.
-
 func prepareData(form url.Values, dataFields interface{}) *orderedmap.OrderedMap {
 
 	//uMap := make(map[string]interface{}, 0)
@@ -378,8 +387,6 @@ func prepareData(form url.Values, dataFields interface{}) *orderedmap.OrderedMap
 
 	} else if dtype == "slice" {
 		typeSlice = dataFields.([]string)
-
-	} else {
 
 	}
 
@@ -459,11 +466,11 @@ func omitEmptyList(form url.Values, dataFields interface{}) []string {
 
 			tag := typ.Field(i).Tag.Get("json")
 			var omitFound bool
-			if strings.Contains(tag, ",") == true {
+			if strings.Contains(tag, ",") {
 				omitFound = true
 			}
 
-			if omitFound == true && len(form.Get(tag)) == 0 {
+			if omitFound && len(form.Get(tag)) == 0 {
 				commaFoundAt := strings.Index(tag, ",")
 				ntag := tag[0:commaFoundAt]
 				fieldList = append(fieldList, ntag)
@@ -494,9 +501,8 @@ func keyValOrder(form url.Values, dataFields interface{}) *orderedmap.OrderedMap
 		for i := 0; i < iVal.NumField(); i++ {
 
 			tag := typ.Field(i).Tag.Get("json")
-
 			var omitFound bool
-			if strings.Contains(tag, ",") == true {
+			if strings.Contains(tag, ",") {
 				omitFound = true
 				commaFoundAt := strings.Index(tag, ",")
 				//fmt.Println("commaFoundAt-->", commaFoundAt, tag)
@@ -504,7 +510,7 @@ func keyValOrder(form url.Values, dataFields interface{}) *orderedmap.OrderedMap
 			}
 
 			//ignored omitemty field which has 0 length
-			if omitFound == true && len(form.Get(tag)) == 0 {
+			if omitFound && len(form.Get(tag)) == 0 {
 				oMap.Set(tag, "")
 				//fmt.Println(">>", tag, "=", form.Get(tag), omitFound, len(form.Get(tag)))
 			} else {
@@ -536,4 +542,27 @@ func sqlStatementJSON(sql string) string {
 	//fmt.Println(string(rbytes))
 
 	return string(rbytes)
+}
+
+//ReturnIndexByValue to Get index number by its value from a slice
+func ReturnIndexByValue(s []string, val string) (index int) {
+
+	for index, v := range s {
+		if v == val {
+			return index
+		}
+	}
+	return -1
+}
+
+//ArrayFind Find a value in_array with its index number
+func ArrayFind(array []string, value string) (bool, int) {
+
+	indx := ReturnIndexByValue(array, value)
+	if indx == -1 {
+		//fmt.Println("NOT FOUND")
+		return false, -1
+	}
+
+	return true, indx
 }
