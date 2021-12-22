@@ -46,6 +46,7 @@ type nqlQuery struct {
 //DB is a database handle
 type DB struct {
 	host     string
+	port     string
 	url      string
 	username string
 	password string
@@ -55,8 +56,9 @@ type DB struct {
 //Connect method
 func Connect(host, userName, passWord, bucketName string) *DB {
 
+	defaultPort := "8093"
 	url := fmt.Sprintf("http://%s:8093/query/service", host)
-	db := &DB{host: host, url: url, username: userName, password: passWord, bucket: bucketName}
+	db := &DB{host: host, port: defaultPort, url: url, username: userName, password: passWord, bucket: bucketName}
 	return db
 }
 
@@ -65,14 +67,14 @@ func (db *DB) Ping() (string, error) {
 
 	var response string
 	timeout := time.Second * 3
-	conn, err := net.DialTimeout("tcp", net.JoinHostPort(db.host, "8093"), timeout)
+	conn, err := net.DialTimeout("tcp", net.JoinHostPort(db.host, db.port), timeout)
 	if err != nil {
 		response = fmt.Sprintf("Connection error %v", err.Error())
 		return response, err
 	}
 	if conn != nil {
 		defer conn.Close()
-		response = fmt.Sprintf("Connection successful to %v", net.JoinHostPort(db.host, "8093"))
+		response = fmt.Sprintf("Connection successful to %v", net.JoinHostPort(db.host, db.port))
 	}
 	return response, nil
 }
