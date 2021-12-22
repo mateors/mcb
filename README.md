@@ -73,3 +73,7 @@ func main(){
 }
 
 ```
+
+## Resource
+* [N1QL Queries & Migrate to Collections](https://blog.couchbase.com/simplifying-query-index-with-collections/)
+* namespace:bucket.scope.collection
