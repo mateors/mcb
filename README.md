@@ -23,7 +23,7 @@ type myTable struct {
 
 func init() {
 
-	db = mcb.Connect("<host>", "<username>", "<password>")
+	db = mcb.Connect("<host>", "<username>", "<password>", "<bucket>", false)
 
 	res, err := db.Ping()
 	if err != nil {
@@ -42,7 +42,6 @@ func main(){
 	var myData myTable
 
 	form := make(url.Values, 0)
-	form.Add("bucket", "master_erp") //bucket Name
 	form.Add("aid", "d006") //document ID
 	form.Add("name", "Mostain Billah")
 	form.Add("age", "36")
