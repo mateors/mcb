@@ -25,13 +25,11 @@ type metrics struct {
 	ErrorCount    int    `json:"errorCount"`
 }
 
-//Struct First character must be a capital letter
 type errorMsg struct {
 	Code    int    `json:"code"`
 	Message string `json:"msg"`
 }
 
-//ResponseMessage Main struct
 type ResponseMessage struct {
 	RequestID string        `json:"requestID"`
 	Result    []interface{} `json:"results"`
@@ -101,7 +99,7 @@ func (pres *ResponseMessage) GetRows() []map[string]interface{} {
 	return rows
 }
 
-//GetBucketRows
+//GetBucketRows with bucketName
 func (pres *ResponseMessage) GetBucketRows(bucketName string) []map[string]interface{} {
 
 	rows := make([]map[string]interface{}, 0)
