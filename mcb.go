@@ -54,11 +54,23 @@ type DB struct {
 }
 
 //Connect method
-func Connect(host, userName, passWord, bucketName string) *DB {
+func Connect(host, userName, passWord, bucketName string, secureConnection bool) *DB {
 
-	defaultPort := "8093"
-	url := fmt.Sprintf("http://%s:8093/query/service", host)
-	db := &DB{host: host, port: defaultPort, url: url, username: userName, password: passWord, bucket: bucketName}
+	var db = &DB{}
+	var url string
+	if secureConnection {
+		url = fmt.Sprintf("https://%s:18093/query/service", host)
+		db.port = "18093"
+	} else {
+		url = fmt.Sprintf("http://%s:8093/query/service", host)
+		db.port = "8093"
+	}
+	//db = &DB{host: host, port: defaultPort, url: url, username: userName, password: passWord, bucket: bucketName}
+	db.host = host
+	db.url = url
+	db.username = userName
+	db.password = passWord
+	db.bucket = bucketName
 	return db
 }
 
