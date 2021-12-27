@@ -42,7 +42,7 @@ func main(){
 	var myData myTable
 
 	form := make(url.Values, 0)
-	form.Add("bucket", "bucketName") //bucket and collection
+	form.Add("bucket", "bucketName") //bucket and collection-> namespace:bucket.scope.collection
 	form.Add("aid", "d006") //document ID
 	form.Add("name", "Mostain Billah")
 	form.Add("age", "36")
