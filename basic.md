@@ -5,12 +5,12 @@
 * Table/Collection: create your own
 
 ## How to create your Scope? (brand new scope)
-> Syntax: CREATE SCOPE <bucket>.<scopename>;
+> Syntax: CREATE SCOPE bucket.scopename;
   
 > CREATE SCOPE `royaltypool`.`master`;
   
 ## How to create your Collection?
-> CREATE COLLECTION <bucket>.<scopename>.<collectionName>;
+> CREATE COLLECTION bucket.scopename.collectionName;
   
 > CREATE COLLECTION `royaltypool`.`master`.`client`;
   
