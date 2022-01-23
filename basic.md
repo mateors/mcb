@@ -7,12 +7,12 @@
 ## How to create your Scope? (brand new scope)
 > Syntax: CREATE SCOPE <bucket>.<scopename>;
   
-> CREATE SCOPE royaltypool.master;
+> CREATE SCOPE `royaltypool`.`master`;
   
 ## How to create your Collection?
 > CREATE COLLECTION <bucket>.<scopename>.<collectionName>;
   
-> CREATE COLLECTION royaltypool.master.client;
+> CREATE COLLECTION `royaltypool`.`master`.`client`;
   
 ## How to create Index? 
 > CREATE INDEX `IndexName` ON `bucket`.`scope`.`collection`(`login_id`);
