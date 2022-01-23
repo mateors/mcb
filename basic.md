@@ -14,7 +14,7 @@
   
 > CREATE COLLECTION `royaltypool`.`master`.`client`;
   
-## How to create Index? 
+## [How to create Index?](https://docs.couchbase.com/server/current/n1ql/n1ql-language-reference/createindex.html)
 
 ### Primary Named Index
 > CREATE PRIMARY INDEX idx_default_primary ON `royalypool` USING GSI;
