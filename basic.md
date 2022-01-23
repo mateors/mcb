@@ -5,7 +5,7 @@
 * Table/Collection: create your own
 
 ## How to create your Scope? (brand new scope)
-> Syntax: CREATE SCOPE <bucket>.<scopename> \
+> Syntax: CREATE SCOPE <bucket>.<scopename>
   
 > CREATE SCOPE royaltypool.master;
 
