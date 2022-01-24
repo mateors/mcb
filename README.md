@@ -10,6 +10,7 @@ You can use this library to work with couchbase database, couchbase SDK for gola
 ## how to use on code?
 
 ```go
+package main
 
 var db *mcb.DB
 
