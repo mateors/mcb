@@ -52,3 +52,4 @@ RETURNING *;
 * https://blog.couchbase.com/simplifying-query-index-with-collections/
 * https://docs.couchbase.com/server/current/getting-started/try-a-query.html
 * https://docs.couchbase.com/files/Couchbase-N1QL-CheatSheet.pdf
+* [Interactive N1QL Query playground] (https://query-tutorial.couchbase.com/tutorial/#1)
