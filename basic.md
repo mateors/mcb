@@ -47,6 +47,14 @@ VALUES ( "airline_4445",
       "type": "airline"} )
 RETURNING *;
 ```
+## Couchbase Documentation You must Read
+* https://docs.couchbase.com/server/current/guides/intro.html
+* https://docs.couchbase.com/server/current/guides/transactions.html
+* https://docs.couchbase.com/server/current/guides/manipulate.html
+* https://docs.couchbase.com/server/current/guides/query.html
+* https://docs.couchbase.com/server/current/rest-api/rest-intro.html
+* https://docs.couchbase.com/files/Couchbase-N1QL-CheatSheet.pdf
+
 
 ## Tutorial You may read:
 * https://blog.couchbase.com/simplifying-query-index-with-collections/
