@@ -127,6 +127,18 @@ func (pres *ResponseMessage) GetBucketRows(bucketName string) []map[string]inter
 	return rows
 }
 
+func (pres *ResponseMessage) GetAllRows() (rows []map[string]interface{}) {
+	
+	rows = make([]map[string]interface{}, 0)
+	for _, v := range pres.Result {
+		ms, isOk := v.(map[string]interface{})
+		if isOk {
+			rows = append(rows, ms)
+		}
+	}
+	return rows
+}
+
 //Query takes an sql statement as input and execute to the couchbase and returns the output
 // as pointer to ResponseMessage
 func (db *DB) Query(sql string) *ResponseMessage {
